@@ -1,0 +1,2 @@
+# openccu-data has no third-party runtime dependencies.
+# All extractors use only the Python standard library.

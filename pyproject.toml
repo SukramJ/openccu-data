@@ -1,0 +1,144 @@
+[build-system]
+requires = ["setuptools>=80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name        = "openccu-data"
+dynamic     = ["version"]
+license     = {text = "MIT License"}
+description = "Extract and distribute Homematic CCU/OpenCCU configuration metadata (translations, easymodes, link profiles)."
+readme      = "README.md"
+authors     = [
+    {name = "SukramJ", email = "sukramj@icloud.com"},
+]
+keywords    = ["home", "automation", "homematic", "ccu", "openccu", "raspberrymatic", "easymode"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Natural Language :: German",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Home Automation",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+requires-python = ">=3.14"
+dependencies = []
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
+]
+
+[project.scripts]
+openccu-extract-easymodes    = "openccu_data.easymodes.extractor:main"
+openccu-extract-translations = "openccu_data.translations.extractor:main"
+openccu-extract-profiles     = "openccu_data.profiles.extractor:main"
+
+[project.urls]
+"Homepage"    = "https://github.com/sukramj/openccu-data"
+"Source Code" = "https://github.com/sukramj/openccu-data"
+"Bug Reports" = "https://github.com/sukramj/openccu-data/issues"
+"Changelog"   = "https://github.com/sukramj/openccu-data/blob/devel/changelog.md"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.dynamic]
+version = {attr = "openccu_data.const.VERSION"}
+
+[tool.setuptools.packages.find]
+include = ["openccu_data", "openccu_data.*"]
+exclude = ["tests", "tests.*", "dist", "build"]
+
+[tool.setuptools.package-data]
+openccu_data = [
+    "py.typed",
+    "data/*.json.gz",
+    "data/translation_custom/*.json",
+    "data/profiles/*.json.gz",
+    "data/profiles/_receiver_type_aliases.json",
+]
+
+# ---------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------
+
+[tool.pytest.ini_options]
+minversion  = "8.0"
+testpaths   = ["tests"]
+addopts     = "-ra --strict-markers"
+log_cli     = false
+
+# ---------------------------------------------------------------------------
+# coverage
+# ---------------------------------------------------------------------------
+
+[tool.coverage.run]
+source = ["openccu_data"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]
+
+# ---------------------------------------------------------------------------
+# ruff
+# ---------------------------------------------------------------------------
+
+[tool.ruff]
+required-version = ">=0.15.10"
+target-version   = "py314"
+line-length      = 120
+src              = ["openccu_data", "tests", "script"]
+
+[tool.ruff.lint]
+select = [
+    "A", "ASYNC", "B", "C4", "E", "F", "I", "ISC", "PERF", "PGH", "PIE", "PL",
+    "PT", "PYI", "RET", "RSE", "RUF", "SIM", "T20", "TID", "UP", "W",
+]
+ignore = [
+    "PLR0911",  # too many return statements (parsers branch a lot)
+    "PLR0912",  # too many branches
+    "PLR0913",  # too many arguments
+    "PLR0915",  # too many statements
+    "PLR2004",  # magic value comparison
+]
+
+[tool.ruff.lint.per-file-ignores]
+"openccu_data/*/extractor.py" = [
+    "T20",       # CLI extractors print progress to stdout
+    "PLW2901",   # `for` loop variable reassignment is a parsing idiom here
+    "S310",      # urllib.request URLs are taken from CLI env, not untrusted input
+    "S314",      # XML parsing not used; even if added, expat is fine for CCU data
+]
+"script/*" = ["T20", "S101"]
+"tests/*"  = ["S101", "PLR2004", "T20"]
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+known-first-party = ["openccu_data"]
+
+# ---------------------------------------------------------------------------
+# mypy
+# ---------------------------------------------------------------------------
+
+[tool.mypy]
+python_version             = "3.14"
+strict                     = true
+warn_unreachable           = true
+warn_unused_ignores        = true
+follow_imports             = "normal"
+ignore_missing_imports     = true
+files                      = ["openccu_data"]

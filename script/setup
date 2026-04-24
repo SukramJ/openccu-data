@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Set up the repository: install dependencies and prek hooks.
+
+# Stop on errors
+set -e
+
+cd "$(dirname "$0")/.."
+script/bootstrap
+prek install
