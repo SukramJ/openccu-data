@@ -1,3 +1,12 @@
+# Version 2026.5.0 (2026-05-10)
+
+## What's Changed
+
+### Changed
+
+- Regenerated `easymode_extract.json.gz` and `translation_extract.json.gz`
+  from the latest OCCU sources.
+
 # Version 2026.4.1 (2026-04-24)
 
 ## What's Changed
