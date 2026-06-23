@@ -94,7 +94,7 @@ loaded by each `main()` (existing env vars win).
 
 - Format: `YYYY.M.NN`
 - Update both `openccu_data/const.py:VERSION` and `changelog.md` together.
-- Branches: `devel` for development, PRs land here; `master` for releases.
+- Branches: `main` is the default branch; PRs land here and releases are cut from it.
 
 ## When you regenerate an artifact
 

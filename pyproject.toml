@@ -46,7 +46,7 @@ openccu-extract-profiles     = "openccu_data.profiles.extractor:main"
 "Homepage"    = "https://github.com/sukramj/openccu-data"
 "Source Code" = "https://github.com/sukramj/openccu-data"
 "Bug Reports" = "https://github.com/sukramj/openccu-data/issues"
-"Changelog"   = "https://github.com/sukramj/openccu-data/blob/devel/changelog.md"
+"Changelog"   = "https://github.com/sukramj/openccu-data/blob/main/changelog.md"
 
 [tool.setuptools]
 include-package-data = true
