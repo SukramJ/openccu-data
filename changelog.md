@@ -1,3 +1,15 @@
+# Version 2026.6.1 (2026-06-27)
+
+## What's Changed
+
+### Fixed
+
+- Restored the curated device-model labels for `HmIP-DLP`, `HmIP-UDI-SMI55`,
+  `HmIP-SMO230` and `HmIP-SWDO-PL-2` in `translation_custom/device_models_{de,en}.json`.
+  These models ship only as `device_icons` in the extract (no `device_models`
+  entry), so without the curated overlay label they fall back to the raw model
+  id in downstream consumers.
+
 # Version 2026.6.0 (2026-06-27)
 
 ## What's Changed
