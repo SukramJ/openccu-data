@@ -116,6 +116,12 @@ ruff check openccu_data/ tests/
 mypy
 ```
 
+Parts of openccu-data are developed with agentic AI assistance, primarily
+[Claude Code](https://www.anthropic.com/claude-code). Submitted issues are
+also triaged and analyzed with agentic help. Every change is still reviewed
+by a human maintainer and must pass the project's tests before it lands —
+AI accelerates the work, it does not replace the review gate.
+
 ## License
 
 - **Code**: [MIT](./LICENSE).
