@@ -1,3 +1,18 @@
+# Version 2026.7.0 (2026-07-19)
+
+## What's Changed
+
+### Added
+
+- New curated artifact `data/device_semantics.json` with a
+  `device_semantics` accessor module: shared device classifications for
+  downstream consumers. First classification: `doorbell_models`
+  (`HM-Sen-DB-PCB`, `HmIP-DBB`, `HmIP-DSD-PCB`) — devices whose
+  press/ring channel is a doorbell rather than a generic button, so
+  aiohomematic/homematicip_local and openccu-loom map the ring press
+  onto their platform's doorbell semantics (e.g. Home Assistant's
+  standard `ring` event type) from one source of truth.
+
 # Version 2026.6.1 (2026-06-27)
 
 ## What's Changed

@@ -62,6 +62,7 @@ exclude = ["tests", "tests.*", "dist", "build"]
 openccu_data = [
     "py.typed",
     "data/*.json.gz",
+    "data/device_semantics.json",
     "data/translation_custom/*.json",
     "data/profiles/*.json.gz",
     "data/profiles/_receiver_type_aliases.json",
