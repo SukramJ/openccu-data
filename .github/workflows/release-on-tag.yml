@@ -102,3 +102,16 @@ jobs:
             -d "{\"event_type\":\"release-on-tag-succeeded\",\"client_payload\":{\"tag\":\"${TAG_NAME}\",\"version\":\"${VERSION}\"}}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trigger go-openccu-data regeneration via repository_dispatch
+        # Cross-repo dispatch needs the PAT (GITHUB_TOKEN is repo-scoped).
+        run: |
+          set -euo pipefail
+          API="https://api.github.com/repos/SukramJ/go-openccu-data/dispatches"
+          echo "Dispatching event 'data-release' for tag ${TAG_NAME}"
+          curl -sSf -X POST "${API}" \
+            -H "Authorization: Bearer ${RELEASE_PAT}" \
+            -H "Accept: application/vnd.github+json" \
+            -d "{\"event_type\":\"data-release\",\"client_payload\":{\"tag\":\"${TAG_NAME}\"}}"
+        env:
+          RELEASE_PAT: ${{ secrets.RELEASE_PAT }}
