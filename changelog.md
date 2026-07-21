@@ -1,3 +1,17 @@
+# Version 2026.7.1 (2026-07-21)
+
+## What's Changed
+
+### Changed
+
+- Regenerated `easymode_extract.json.gz`, `translation_extract.json.gz` and the
+  `BLIND_VIRTUAL_RECEIVER`, `SHUTTER_VIRTUAL_RECEIVER` and
+  `WATER_SWITCH_VIRTUAL_RECEIVER` profiles from the latest OCCU sources.
+  Notable data changes: new `SHORT_OUTPUT_BEHAVIOUR` parameter in the
+  water-switch profiles, `LONG_PROFILE_ACTION_TYPE` narrowed to a fixed
+  value in the blind/shutter profiles, and revised German/English help
+  texts and value labels in the translation extract.
+
 # Version 2026.7.0 (2026-07-19)
 
 ## What's Changed
