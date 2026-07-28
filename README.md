@@ -35,6 +35,7 @@ openccu-data/
 ├── NOTICE.md              Data-artifact licensing (EQ-3/OCCU)
 ├── README.md              this file
 ├── CLAUDE.md              guide for AI assistants
+├── AI_POLICY.md           AI contribution policy
 ├── changelog.md
 ├── pyproject.toml
 ├── openccu_data/
@@ -121,6 +122,9 @@ Parts of openccu-data are developed with agentic AI assistance, primarily
 also triaged and analyzed with agentic help. Every change is still reviewed
 by a human maintainer and must pass the project's tests before it lands —
 AI accelerates the work, it does not replace the review gate.
+
+Contributions may use AI tools as well — see [AI_POLICY.md](./AI_POLICY.md)
+for the rules that apply.
 
 ## License
 
