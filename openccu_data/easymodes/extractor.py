@@ -27,6 +27,7 @@ Environment Variables:
 from __future__ import annotations
 
 import gzip
+import html
 import json
 import os
 from pathlib import Path
@@ -322,6 +323,10 @@ def parse_tcl_easymode(content: str) -> dict[str, Any]:
         desc = ui_description.strip().strip('"')
         # Clean description from TCL variable references
         desc = re.sub(r"\$PROFILE_\d+\([^)]+\)", "", desc).strip()
+        # The OCCU descriptions are WebUI fragments ("Beim &Ouml;ffnen des
+        # Kontaktes ..."); consumers render them as plain text, so decode
+        # the character references here rather than in each consumer.
+        desc = html.unescape(desc).replace("\u00a0", " ")
 
         profile: dict[str, Any] = {
             "id": pid,
