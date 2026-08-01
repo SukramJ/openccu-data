@@ -47,11 +47,7 @@ def test_artefact_carries_no_html_references(path: Path) -> None:
     because they treat these as plain text — correctly, since escaping them
     again is what stops a device name from injecting markup.
     """
-    offenders = [
-        (s, _REFERENCE_RE.findall(s)[:3])
-        for s in _strings(_load(path))
-        if _REFERENCE_RE.search(s)
-    ]
+    offenders = [(s, _REFERENCE_RE.findall(s)[:3]) for s in _strings(_load(path)) if _REFERENCE_RE.search(s)]
     assert not offenders, (
         f"{path.name} carries {len(offenders)} string(s) with HTML references, "
         f"e.g. {offenders[:2]} — decode them during extraction"
