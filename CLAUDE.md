@@ -40,6 +40,7 @@ openccu_data/
 
 script/                            CLI wrappers (sys.path shim → main())
 tests/                             pytest suite
+Makefile                           wrappers for the common commands (make help)
 ```
 
 The three extractors are independent. They share no helper module; each is
@@ -62,6 +63,12 @@ ruff check openccu_data/ tests/ script/             # lint
 ruff format openccu_data/ tests/ script/            # format
 mypy                                                # type-check
 ```
+
+The `Makefile` wraps these (and more): `make test`, `make lint`,
+`make format`, `make typecheck`, `make check` (lint + typecheck + test),
+`make coverage`, `make prek`, `make extract-<name>`. `make help` lists all
+targets. Targets run via `script/run-in-env.sh`, so an activated virtualenv
+is not required.
 
 ### Console scripts
 

@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import contextlib
 import gzip
+import html
 import json
 import os
 from pathlib import Path
@@ -301,40 +302,38 @@ def _parse_constraint(
 
 
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
-_HTML_ENTITIES = {
-    "&quot;": '"',
-    "&amp;": "&",
-    "&lt;": "<",
-    "&gt;": ">",
-    "&nbsp;": " ",
-    "&szlig;": "ß",
-    "&auml;": "ä",
-    "&ouml;": "ö",
-    "&uuml;": "ü",
-    "&Auml;": "Ä",
-    "&Ouml;": "Ö",
-    "&Uuml;": "Ü",
-}
 
 
 def _strip_html(text: str) -> str:
-    """Strip HTML tags and decode common entities."""
+    """Strip HTML tags and decode character references.
+
+    The OCCU localisation files are WebUI fragments: a profile named
+    "Bewässerungsaktor" is stored as "Bew&auml;sserungsaktor". Consumers
+    render these as plain text, so a surviving reference is shown to the
+    operator verbatim.
+
+    html.unescape covers every named and numeric reference, including the
+    ones a hand-maintained table would miss on the next OCCU release. It
+    also matches what the translation extractor already does, so the three
+    artefacts agree on what a display string looks like.
+    """
     text = text.replace('\\"', '"')
     text = _HTML_TAG_RE.sub("", text)
-    for entity, char in _HTML_ENTITIES.items():
-        text = text.replace(entity, char)
-    return text.strip()
+    text = html.unescape(text)
+    # "&nbsp;" decodes to U+00A0, which the previous hand-maintained table
+    # mapped to a plain space. Keep that: consumers treat these as plain
+    # text and a non-breaking space there only surprises string comparison.
+    return text.replace("\u00a0", " ").strip()
 
 
 def _parse_loc_content(content: str) -> dict[str, str]:
     """Parse localization text content and return key-value pairs."""
     result: dict[str, str] = {}
     for match in _LOC_RE.finditer(content):
-        value = match.group(2)
-        # Strip HTML from description values
-        if value.startswith("<") or "\\" in value:
-            value = _strip_html(value)
-        result[match.group(1)] = value
+        # Every value is cleaned, not just the ones that open with a tag:
+        # "Bew&auml;sserungsaktor" carries neither a tag nor a backslash,
+        # which is exactly how the references survived into the artefacts.
+        result[match.group(1)] = _strip_html(match.group(2))
     return result
 
 

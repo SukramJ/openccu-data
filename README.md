@@ -37,6 +37,7 @@ openccu-data/
 ├── CLAUDE.md              guide for AI assistants
 ├── AI_POLICY.md           AI contribution policy
 ├── changelog.md
+├── Makefile               common dev tasks (`make help`)
 ├── pyproject.toml
 ├── openccu_data/
 │   ├── const.py
@@ -109,6 +110,21 @@ After regenerating any artifact, copy the relevant files into the consumer
 repository and open a PR there as well.
 
 ## Development
+
+The common tasks are wrapped in a `Makefile`:
+
+```bash
+make setup       # install dev dependencies + prek hooks
+make test        # run the pytest suite
+make lint        # ruff check
+make format      # ruff format
+make typecheck   # mypy
+make check       # lint + typecheck + test
+```
+
+`make help` lists all targets, including `make extract` /
+`make extract-<name>` to regenerate the data artifacts. The same commands
+also work without make:
 
 ```bash
 python -m pip install -e .[test]

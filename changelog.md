@@ -1,3 +1,21 @@
+# Version 2026.7.2 (2026-08-01)
+
+## What's Changed
+
+### Fixed
+
+- The easymode and profile extractors now decode HTML character references
+  (`&auml;`, `&amp;`, `&nbsp;`, …) in display strings via `html.unescape`,
+  matching what the translation extractor has always done. Regenerated the
+  affected artifacts: 36 profile files (197 strings) and the easymode
+  archive — every change is a decoded reference, a stripped tag, or an
+  `&nbsp;` folded to a plain space. A parametrised test now asserts the
+  property over every artifact.
+
+### Added
+
+- `Makefile` wrapping the common dev tasks (`make help` lists all targets).
+
 # Version 2026.7.1 (2026-07-21)
 
 ## What's Changed
