@@ -2,9 +2,8 @@
 
 Extract and distribute Homematic CCU configuration metadata
 (translations, easymodes, link profiles) from
-[OCCU](https://github.com/eq-3/occu) /
-[OpenCCU](https://github.com/jens-maus/RaspberryMatic) /
-[RaspberryMatic](https://github.com/jens-maus/RaspberryMatic).
+[OpenCCU-Base](https://github.com/homematicip/OpenCCU-Base) /
+[OpenCCU](https://github.com/OpenCCU/OpenCCU).
 
 This repository is the **single source of truth** for the data artifacts that
 are consumed by [aiohomematic](https://github.com/sukramj/aiohomematic) and
@@ -21,8 +20,12 @@ projects vendor the produced JSON archives at runtime.
 
 All three read from either:
 
-- a local OCCU/OpenCCU/RaspberryMatic checkout (`OCCU_PATH=/path/to/occu`), or
+- a local OpenCCU-Base checkout (`OPENCCUBASE_PATH=/path/to/OpenCCU-Base`), or
 - a running CCU instance over HTTP/HTTPS (`CCU_URL=https://my-ccu.local`).
+
+Which source to use is not a free choice — see
+[`DATA_SOURCES.md`](./DATA_SOURCES.md) for why a running CCU is currently
+still required, and what has to change before it is not.
 
 If both are set, the easymode/translation extractors merge results; the
 profile extractor prefers the running CCU and falls back to local.
@@ -32,7 +35,8 @@ profile extractor prefers the running CCU and falls back to local.
 ```
 openccu-data/
 ├── LICENSE                MIT (covers the code)
-├── NOTICE.md              Data-artifact licensing (EQ-3/OCCU)
+├── NOTICE.md              Data-artifact licensing (EQ-3/HMSL 2.0)
+├── DATA_SOURCES.md        Where the artifacts come from; upstream transition
 ├── README.md              this file
 ├── CLAUDE.md              guide for AI assistants
 ├── AI_POLICY.md           AI contribution policy
@@ -68,8 +72,8 @@ No third-party runtime dependencies; only the standard library.
 After installation, three console scripts are available on the PATH:
 
 ```bash
-OCCU_PATH=/path/to/occu openccu-extract-easymodes
-OCCU_PATH=/path/to/occu openccu-extract-translations
+OPENCCUBASE_PATH=/path/to/OpenCCU-Base openccu-extract-easymodes
+OPENCCUBASE_PATH=/path/to/OpenCCU-Base openccu-extract-translations
 CCU_URL=https://my-ccu.local openccu-extract-profiles
 ```
 
@@ -78,19 +82,19 @@ Output lands in `openccu_data/data/` by default. Override via `OUTPUT_DIR`.
 ### Without installation
 
 ```bash
-OCCU_PATH=/path/to/occu python script/extract_easymodes.py
-OCCU_PATH=/path/to/occu python script/extract_translations.py
+OPENCCUBASE_PATH=/path/to/OpenCCU-Base python script/extract_easymodes.py
+OPENCCUBASE_PATH=/path/to/OpenCCU-Base python script/extract_translations.py
 CCU_URL=https://my-ccu.local python script/extract_profiles.py
 ```
 
 ### Environment variables
 
-| Variable     | Purpose                                                                  |
-| ------------ | ------------------------------------------------------------------------ |
-| `OCCU_PATH`  | Path to a local OCCU/RaspberryMatic checkout                             |
-| `CCU_URL`    | URL of a running CCU/OpenCCU instance (`http://` or `https://`)          |
-| `OUTPUT_DIR` | Override the default output directory                                    |
-| `RECEIVERS`  | (`extract_profiles` only) comma-separated list of receiver channel types |
+| Variable           | Purpose                                                                                                                                         |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OPENCCUBASE_PATH` | Path to a local source checkout — `www/` (OpenCCU-Base) and `WebUI/www/` (OCCU) layouts both work; relative paths resolve against the repo root |
+| `CCU_URL`          | URL of a running CCU/OpenCCU instance (`http://` or `https://`)                                                                                 |
+| `OUTPUT_DIR`       | Override the default output directory                                                                                                           |
+| `RECEIVERS`        | (`extract_profiles` only) comma-separated list of receiver channel types                                                                        |
 
 `.env` files at the repository root are auto-loaded (existing env vars win).
 
@@ -145,7 +149,7 @@ for the rules that apply.
 ## License
 
 - **Code**: [MIT](./LICENSE).
-- **Data artifacts** under `openccu_data/data/`: derivative of OCCU/RaspberryMatic
+- **Data artifacts** under `openccu_data/data/`: derivative of OpenCCU-Base/OpenCCU
   and subject to the EQ-3 license (see [NOTICE.md](./NOTICE.md)). The curated
   `translation_custom/` overrides are MIT.
 

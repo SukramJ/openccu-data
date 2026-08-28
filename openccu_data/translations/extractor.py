@@ -4,25 +4,25 @@
 """
 Extract CCU WebUI translations and generate a gzip-compressed JSON archive.
 
-Parse JavaScript translation files from the OpenCCU/RaspberryMatic WebUI
-and the stringtable mapping file, then output a single
+Parse JavaScript translation files from the OpenCCU WebUI and the
+stringtable mapping file, then output a single
 ``translation_extract.json.gz`` archive containing channel types, device models,
 parameter names, parameter values, parameter help, and device icons.
 
 Usage:
-    # From local OCCU checkout (preferred)
-    OCCU_PATH=/path/to/occu openccu-extract-translations
+    # From local OpenCCU-Base checkout (preferred)
+    OPENCCUBASE_PATH=/path/to/OpenCCU-Base openccu-extract-translations
 
     # From remote CCU via HTTP
     CCU_URL=https://my-ccu.local openccu-extract-translations
 
     # Custom output directory
-    OCCU_PATH=/path/to/occu OUTPUT_DIR=custom/path openccu-extract-translations
+    OPENCCUBASE_PATH=/path/to/OpenCCU-Base OUTPUT_DIR=custom/path openccu-extract-translations
 
 Environment Variables:
-    OCCU_PATH   Path to local OCCU checkout (preferred)
-    CCU_URL     URL of a live CCU instance (alternative)
-    OUTPUT_DIR  Output directory (default: openccu_data/data)
+    OPENCCUBASE_PATH  Path to local OpenCCU-Base checkout (preferred)
+    CCU_URL           URL of a live CCU instance (alternative)
+    OUTPUT_DIR        Output directory (default: openccu_data/data)
 """
 
 import contextlib
@@ -809,9 +809,25 @@ def resolve_parameter_translations(
     return parameters, parameter_values, unresolved_count, synthesized_count
 
 
-def load_local_file(occu_path: Path, relative_path: str) -> str:
-    """Load a file from the local OCCU checkout."""
-    file_path = occu_path / "WebUI" / "www" / relative_path
+def _resolve_www_root(base_path: Path) -> Path:
+    """
+    Return the WebUI document root inside a source checkout.
+
+    Two layouts are in use: OpenCCU-Base keeps the document root at ``www/``,
+    while an OCCU tree — including the patched one the OpenCCU firmware build
+    produces — keeps it at ``WebUI/www/``. Pick whichever actually carries the
+    ``config/`` directory the extractors read; fall back to ``www/`` so the
+    caller reports a missing path against the modern layout.
+    """
+    for candidate in (base_path / "www", base_path / "WebUI" / "www"):
+        if (candidate / "config").is_dir():
+            return candidate
+    return base_path / "www"
+
+
+def load_local_file(www_root: Path, relative_path: str) -> str:
+    """Load a file from the local OpenCCU-Base checkout."""
+    file_path = www_root / relative_path
     # Some files use ISO-8859-1 encoding (e.g. notTranslated.js)
     try:
         return file_path.read_text(encoding="utf-8")
@@ -841,7 +857,7 @@ def _prepare_data(data: dict[str, str]) -> dict[str, str]:
 
 
 def load_master_lang_files(
-    occu_path: Path,
+    www_root: Path,
     locale: str,
 ) -> dict[str, str]:
     """
@@ -850,7 +866,7 @@ def load_master_lang_files(
     Parse all .js files in config/easymodes/MASTER_LANG/ that contain
     jQuery.extend(true, langJSON, ...) blocks for the given locale.
     """
-    master_lang_dir = occu_path / "WebUI" / "www" / _MASTER_LANG_DIR
+    master_lang_dir = www_root / _MASTER_LANG_DIR
     merged: dict[str, str] = {}
 
     if not master_lang_dir.is_dir():
@@ -872,7 +888,7 @@ def load_master_lang_files(
 
 
 def load_pname_files(
-    occu_path: Path,
+    www_root: Path,
     locale: str,
 ) -> dict[str, str]:
     """
@@ -880,7 +896,7 @@ def load_pname_files(
 
     Parse PNAME.txt files in config/easymodes/etc/localization/{locale}/.
     """
-    pname_dir = occu_path / "WebUI" / "www" / _PNAME_DIR.format(locale=locale)
+    pname_dir = www_root / _PNAME_DIR.format(locale=locale)
     merged: dict[str, str] = {}
 
     for pname_file in _PNAME_FILES:
@@ -901,7 +917,7 @@ def load_pname_files(
 
 
 def load_help_files(
-    occu_path: Path,
+    www_root: Path,
     locale: str,
 ) -> dict[str, str]:
     """
@@ -911,7 +927,7 @@ def load_help_files(
     jQuery.extend(true, langJSON, ...) blocks for the given locale.
     Only loads files listed in _HELP_FILE_NAMES.
     """
-    master_lang_dir = occu_path / "WebUI" / "www" / _MASTER_LANG_DIR
+    master_lang_dir = www_root / _MASTER_LANG_DIR
     merged: dict[str, str] = {}
 
     if not master_lang_dir.is_dir():
@@ -941,7 +957,7 @@ _PROFILE_LOC_SKIP_PREFIXES = ("description_", "subset_")
 
 
 def load_profile_localization_files(
-    occu_path: Path,
+    www_root: Path,
     locale: str,
 ) -> dict[str, str]:
     """
@@ -952,7 +968,7 @@ def load_profile_localization_files(
     Filter out keys starting with description_ or subset_ (easymode UI descriptions).
     """
     merged: dict[str, str] = {}
-    base_dir = occu_path / "WebUI" / "www" / "config" / "easymodes"
+    base_dir = www_root / "config" / "easymodes"
 
     if not base_dir.is_dir():
         return merged
@@ -992,14 +1008,16 @@ _SourceTuple = tuple[
 
 
 def load_sources_local(
-    occu_path: Path,
+    openccubase_path: Path,
 ) -> _SourceTuple:
     """
-    Load all translation sources from a local OCCU checkout.
+    Load all translation sources from a local OpenCCU-Base checkout.
 
     Return 9-tuple of (locale_data, stringtable_mapping, pname_data, easymode_mappings,
     options_tcl_data, help_data, icon_data, profile_localization_data, easymode_option_values).
     """
+    www_root = _resolve_www_root(openccubase_path)
+
     locale_data: dict[str, dict[str, dict[str, str]]] = {}
     pname_data: dict[str, dict[str, str]] = {}
     help_data: dict[str, dict[str, str]] = {}
@@ -1015,7 +1033,7 @@ def load_sources_local(
         for js_file in _JS_FILES:
             relative_path = f"{lang_dir}/{js_file}"
             try:
-                content = load_local_file(occu_path, relative_path)
+                content = load_local_file(www_root, relative_path)
                 raw_contents[js_file] = content
                 parsed = parse_jquery_extend(content, locale=locale)
                 locale_data[locale][js_file] = parsed
@@ -1036,40 +1054,40 @@ def load_sources_local(
                 print(f"  {locale}/stringtable aliases: {len(aliases)} entries")
 
         # Load MASTER_LANG device-specific translations
-        master_translations = load_master_lang_files(occu_path, locale)
+        master_translations = load_master_lang_files(www_root, locale)
         if master_translations:
             locale_data[locale]["_master_lang"] = master_translations
             print(f"  {locale}/MASTER_LANG: {len(master_translations)} entries")
 
         # Load PNAME direct parameter label files
-        pname_translations = load_pname_files(occu_path, locale)
+        pname_translations = load_pname_files(www_root, locale)
         if pname_translations:
             pname_data[locale] = pname_translations
 
         # Load help text files
-        help_translations = load_help_files(occu_path, locale)
+        help_translations = load_help_files(www_root, locale)
         if help_translations:
             help_data[locale] = help_translations
             print(f"  {locale}/HELP: {len(help_translations)} entries")
 
         # Load profile localization files
-        profile_loc = load_profile_localization_files(occu_path, locale)
+        profile_loc = load_profile_localization_files(www_root, locale)
         if profile_loc:
             profile_localization_data[locale] = profile_loc
             print(f"  {locale}/profile localization: {len(profile_loc)} entries")
 
     # Load stringtable mapping
-    mapping_content = load_local_file(occu_path, _STRINGTABLE_MAPPING_PATH)
+    mapping_content = load_local_file(www_root, _STRINGTABLE_MAPPING_PATH)
     stringtable_mapping = parse_stringtable_mapping(mapping_content)
     print(f"  stringtable mapping: {len(stringtable_mapping)} entries")
 
     # Parse easymode TCL files for parameter -> template variable mappings
-    easymode_dir = occu_path / "WebUI" / "www" / _EASYMODE_DIR
+    easymode_dir = www_root / _EASYMODE_DIR
     easymode_mappings = parse_easymode_tcl_mappings(easymode_dir)
     print(f"  easymode TCL mappings: {len(easymode_mappings)} entries")
 
     # Parse options.tcl for option type -> {index: template_var} mappings
-    options_tcl_path = occu_path / "WebUI" / "www" / "config" / "easymodes" / "etc" / "options.tcl"
+    options_tcl_path = www_root / "config" / "easymodes" / "etc" / "options.tcl"
     options_tcl_data: dict[str, dict[int, str]] = {}
     if options_tcl_path.is_file():
         try:
@@ -1084,7 +1102,7 @@ def load_sources_local(
     print(f"  easymode TCL option values: {len(easymode_option_values)} parameters")
 
     # Load device icon database (locale-independent)
-    devdb_path = occu_path / "WebUI" / "www" / _DEVDB_PATH
+    devdb_path = www_root / _DEVDB_PATH
     icon_data: dict[str, str] = {}
     if devdb_path.is_file():
         try:
@@ -1493,13 +1511,13 @@ def main() -> int:
     project_root = Path(__file__).resolve().parent.parent.parent
     _load_dotenv(project_root / ".env")
 
-    occu_path = os.environ.get("OCCU_PATH")
+    openccubase_path = os.environ.get("OPENCCUBASE_PATH")
     ccu_url = os.environ.get("CCU_URL")
     output_dir_str = os.environ.get("OUTPUT_DIR", _DEFAULT_OUTPUT_DIR)
 
-    if not occu_path and not ccu_url:
+    if not openccubase_path and not ccu_url:
         print(
-            "ERROR: Set OCCU_PATH (local checkout) or CCU_URL (remote CCU) environment variable.",
+            "ERROR: Set OPENCCUBASE_PATH (local checkout) or CCU_URL (remote CCU) environment variable.",
             file=sys.stderr,
         )
         return 1
@@ -1513,10 +1531,13 @@ def main() -> int:
     # Phase 1: Load sources (both can be set; results are merged)
     sources: list[_SourceTuple] = []
 
-    if occu_path:
-        resolved_occu = Path(occu_path).resolve()
-        print(f"Loading sources from {resolved_occu} ...")
-        sources.append(load_sources_local(resolved_occu))
+    if openccubase_path:
+        resolved_base = Path(openccubase_path)
+        if not resolved_base.is_absolute():
+            resolved_base = project_root / resolved_base
+        resolved_base = resolved_base.resolve()
+        print(f"Loading sources from {resolved_base} ...")
+        sources.append(load_sources_local(resolved_base))
 
     if ccu_url:
         print(f"\nLoading sources from {ccu_url} ...")
@@ -1535,7 +1556,7 @@ def main() -> int:
             easymode_option_values,
         ) = sources[0]
     else:
-        # Merge: OCCU local as base, remote CCU as overlay
+        # Merge: OpenCCU-Base local as base, remote CCU as overlay
         (
             locale_data,
             stringtable_mapping,
@@ -1578,7 +1599,12 @@ def main() -> int:
     # Write gzip-compressed archive
     archive_path = output_dir / "translation_extract.json.gz"
     raw = json.dumps(archive, separators=(",", ":"), ensure_ascii=False, sort_keys=True).encode()
-    with gzip.open(archive_path, "wb", compresslevel=9) as gz:
+    # mtime=0 and an empty filename keep the archive reproducible: an unchanged
+    # input must not produce a different file (see the profiles extractor).
+    with (
+        archive_path.open("wb") as raw_fh,
+        gzip.GzipFile(filename="", mode="wb", fileobj=raw_fh, compresslevel=9, mtime=0) as gz,
+    ):
         gz.write(raw)
 
     size_kb = archive_path.stat().st_size / 1024

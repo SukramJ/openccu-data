@@ -41,7 +41,7 @@ def _artefacts() -> list[Path]:
 
 @pytest.mark.parametrize("path", _artefacts(), ids=lambda p: p.name)
 def test_artefact_carries_no_html_references(path: Path) -> None:
-    """The OCCU sources are WebUI fragments; extraction must decode them.
+    """The OpenCCU-Base sources are WebUI fragments; extraction must decode them.
 
     A surviving "&auml;" is shown to the operator verbatim by every consumer,
     because they treat these as plain text — correctly, since escaping them

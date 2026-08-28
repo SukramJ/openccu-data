@@ -8,8 +8,8 @@ This document is the entry point for AI assistants working on the
 `openccu-data` is the **data-extraction pipeline and source-of-truth
 distribution** for Homematic CCU configuration metadata. It parses TCL and
 JavaScript files from
-[OCCU](https://github.com/eq-3/occu) /
-[OpenCCU](https://github.com/jens-maus/RaspberryMatic) into compact, typed
+[OpenCCU-Base](https://github.com/homematicip/OpenCCU-Base) /
+[OpenCCU](https://github.com/OpenCCU/OpenCCU) into compact, typed
 JSON artifacts that downstream Python libraries vendor at runtime.
 
 ### Key characteristics
@@ -80,7 +80,7 @@ openccu-extract-translations
 openccu-extract-profiles
 ```
 
-All read `OCCU_PATH` (local checkout), `CCU_URL` (running instance), and
+All read `OPENCCUBASE_PATH` (local checkout), `CCU_URL` (running instance), and
 optionally `OUTPUT_DIR` from the environment. `.env` at the repo root is
 loaded by each `main()` (existing env vars win).
 
@@ -91,11 +91,16 @@ loaded by each `main()` (existing env vars win).
 - **Output paths** default to `openccu_data/data/` resolved relative to the
   package directory (not the cwd) — so the scripts work regardless of where
   they are invoked from.
-- **OCCU_PATH resolution**: relative paths resolve against the repository
-  root (`Path(__file__).parent.parent.parent`).
+- **OPENCCUBASE_PATH resolution**: points at a local source checkout. Each
+  extractor carries its own `_resolve_www_root()` and accepts both layouts in
+  use: OpenCCU-Base keeps the document root at `www/`, an OCCU tree — including
+  the patched one the OpenCCU firmware build produces — at `WebUI/www/`. The
+  layout is picked by which candidate actually carries `config/`. Relative
+  paths resolve against the repository root
+  (`Path(__file__).parent.parent.parent`) in all three extractors.
 - **Merging**: `easymodes` and `translations` extractors merge results when
-  both `OCCU_PATH` and `CCU_URL` are set. `profiles` prefers `CCU_URL` and
-  uses `OCCU_PATH` as a fallback for empty results.
+  both `OPENCCUBASE_PATH` and `CCU_URL` are set. `profiles` prefers `CCU_URL`
+  and uses `OPENCCUBASE_PATH` as a fallback for empty results.
 
 ## Workflow / changelog
 
@@ -105,10 +110,14 @@ loaded by each `main()` (existing env vars win).
 
 ## When you regenerate an artifact
 
+**Read [`DATA_SOURCES.md`](./DATA_SOURCES.md) first.** An upstream transition
+is under way and regenerating from OpenCCU-Base alone currently _degrades_ the
+artifacts; that document records which sources are valid and why.
+
 1. Run the relevant `openccu-extract-*` command.
 2. Diff `openccu_data/data/...` (be ready for large diffs in `*.json.gz`).
-3. Commit the change in this repo with a description of the OCCU revision /
-   CCU firmware version that produced it.
+3. Commit the change in this repo with a description of the OpenCCU-Base
+   revision / CCU firmware version that produced it.
 4. **Sync to the vendored copies** in the consumer repos:
    - `aiohomematic/aiohomematic/ccu_data/`
    - `aiohomematic-config/aiohomematic_config/profiles/`
@@ -119,7 +128,8 @@ commit.
 ## Data licensing reminder
 
 The files in `openccu_data/data/` (excluding `translation_custom/`) are
-derivative works of OCCU/RaspberryMatic and remain under their EQ-3 license.
+derivative works of OpenCCU-Base/OpenCCU and remain under their EQ-3
+license (HMSL 2.0).
 The Python _code_ is MIT. See [`NOTICE.md`](./NOTICE.md) before
 redistributing.
 
@@ -140,6 +150,8 @@ redistributing.
 - ❌ Add runtime third-party dependencies — keep it stdlib.
 - ❌ Skip the consumer-repo sync after regenerating artifacts.
 - ❌ Touch `data/` files by hand — always regenerate via an extractor.
+- ❌ Write archives with plain `gzip.open()` — pass `mtime=0` and an empty
+  filename so an unchanged input yields byte-identical output.
 - ❌ Move modules without updating the console-script entry points in
   `pyproject.toml`.
 

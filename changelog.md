@@ -1,3 +1,38 @@
+# Version 2026.8.1 (2026-08-28)
+
+## What's Changed
+
+### Changed
+
+- **Breaking (extraction only):** the local source is now an
+  [OpenCCU-Base](https://github.com/homematicip/OpenCCU-Base) checkout instead
+  of an OCCU checkout. The extractors read from `<checkout>/www/` — the
+  `WebUI/` level of the old OCCU layout is gone — and the environment variable
+  `OCCU_PATH` is renamed to `OPENCCUBASE_PATH`. Existing `.env` files and CI
+  jobs need the new name; the published data artifacts and their format are
+  unaffected.
+- All three extractors now resolve a relative `OPENCCUBASE_PATH` against the
+  repository root. Previously only `easymodes` did; `translations` resolved
+  against the current working directory and `profiles` not at all, so a
+  relative path only worked when invoked from the repo root.
+- Both source layouts are accepted: `<checkout>/www/` (OpenCCU-Base) and
+  `<checkout>/WebUI/www/` (an OCCU tree, including the patched one the OpenCCU
+  firmware build produces). The layout is detected by which candidate carries
+  `config/`, so the same command works against either checkout.
+- `easymode_extract.json.gz` and `translation_extract.json.gz` are now written
+  reproducibly (`mtime=0`, empty filename in the gzip header), matching what
+  the profile extractor already did. Previously every run produced a different
+  file even when the extracted data was unchanged.
+- New [`DATA_SOURCES.md`](./DATA_SOURCES.md) documenting where the artifacts
+  come from: the three upstream trees (OpenCCU-Base, the OpenCCU build system,
+  a running CCU), why a live CCU is still required today, the transition to
+  OpenCCU-Base under way upstream, and the deferred plan to generate the
+  artifacts on each OpenCCU release.
+- Documentation and metadata now refer to OpenCCU-Base and
+  [OpenCCU](https://github.com/OpenCCU/OpenCCU) instead of OCCU and
+  RaspberryMatic. `NOTICE.md` names the applicable upstream license as HMSL 2.0
+  per OpenCCU-Base's `licenses/licenses.md`.
+
 # Version 2026.7.2 (2026-08-01)
 
 ## What's Changed

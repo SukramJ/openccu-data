@@ -1,6 +1,6 @@
 """Easymode metadata extractor.
 
-Parses TCL easymode configuration files from OCCU/OpenCCU/RaspberryMatic and
+Parses TCL easymode configuration files from OpenCCU-Base/OpenCCU and
 emits ``data/easymode_extract.json.gz``.
 """
 
