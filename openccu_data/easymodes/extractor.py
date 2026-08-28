@@ -4,24 +4,24 @@
 """
 Extract CCU easymode metadata and generate a gzip-compressed JSON archive.
 
-Parse TCL easymode configuration files from the OpenCCU/RaspberryMatic WebUI
-and output a single ``easymode_extract.json.gz`` archive containing channel
-metadata, option presets, and cross-validation rules.
+Parse TCL easymode configuration files from the OpenCCU WebUI and output a
+single ``easymode_extract.json.gz`` archive containing channel metadata,
+option presets, and cross-validation rules.
 
 Usage:
-    # From local OCCU checkout (preferred)
-    OCCU_PATH=/path/to/occu openccu-extract-easymodes
+    # From local OpenCCU-Base checkout (preferred)
+    OPENCCUBASE_PATH=/path/to/OpenCCU-Base openccu-extract-easymodes
 
     # From remote CCU via HTTP
     CCU_URL=https://my-ccu.local openccu-extract-easymodes
 
     # Custom output directory
-    OCCU_PATH=/path/to/occu OUTPUT_DIR=custom/path openccu-extract-easymodes
+    OPENCCUBASE_PATH=/path/to/OpenCCU-Base OUTPUT_DIR=custom/path openccu-extract-easymodes
 
 Environment Variables:
-    OCCU_PATH   Path to local OCCU checkout (preferred)
-    CCU_URL     URL of a live CCU instance (alternative)
-    OUTPUT_DIR  Output directory (default: openccu_data/data)
+    OPENCCUBASE_PATH  Path to local OpenCCU-Base checkout (preferred)
+    CCU_URL           URL of a live CCU instance (alternative)
+    OUTPUT_DIR        Output directory (default: openccu_data/data)
 """
 
 from __future__ import annotations
@@ -323,7 +323,7 @@ def parse_tcl_easymode(content: str) -> dict[str, Any]:
         desc = ui_description.strip().strip('"')
         # Clean description from TCL variable references
         desc = re.sub(r"\$PROFILE_\d+\([^)]+\)", "", desc).strip()
-        # The OCCU descriptions are WebUI fragments ("Beim &Ouml;ffnen des
+        # The OpenCCU-Base descriptions are WebUI fragments ("Beim &Ouml;ffnen des
         # Kontaktes ..."); consumers render them as plain text, so decode
         # the character references here rather than in each consumer.
         desc = html.unescape(desc).replace("\u00a0", " ")
@@ -875,13 +875,29 @@ def _get_channel_type_dirs(easymode_dir: Path) -> dict[str, Path]:
     return result
 
 
-def load_local(occu_path: Path) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
+def _resolve_www_root(base_path: Path) -> Path:
     """
-    Load easymode data from local OCCU checkout.
+    Return the WebUI document root inside a source checkout.
+
+    Two layouts are in use: OpenCCU-Base keeps the document root at ``www/``,
+    while an OCCU tree — including the patched one the OpenCCU firmware build
+    produces — keeps it at ``WebUI/www/``. Pick whichever actually carries the
+    ``config/`` directory the extractors read; fall back to ``www/`` so the
+    caller reports a missing path against the modern layout.
+    """
+    for candidate in (base_path / "www", base_path / "WebUI" / "www"):
+        if (candidate / "config").is_dir():
+            return candidate
+    return base_path / "www"
+
+
+def load_local(openccubase_path: Path) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
+    """
+    Load easymode data from local OpenCCU-Base checkout.
 
     Returns (channel_metadata, option_presets).
     """
-    webui_www = occu_path / "WebUI" / "www"
+    webui_www = _resolve_www_root(openccubase_path)
     easymode_dir = webui_www / _EASYMODE_DIR
 
     if not easymode_dir.is_dir():
@@ -985,7 +1001,7 @@ def load_remote(ccu_url: str) -> tuple[dict[str, dict[str, Any]], dict[str, Any]
     # Remote mode: we can't list directories, so we try known channel types
     # This is a best-effort approach; local mode is preferred for completeness
     channel_metadata: dict[str, dict[str, Any]] = {}
-    print("  Note: Remote mode cannot discover all channel types. Use OCCU_PATH for full extraction.")
+    print("  Note: Remote mode cannot discover all channel types. Use OPENCCUBASE_PATH for full extraction.")
 
     return channel_metadata, option_presets
 
@@ -1028,7 +1044,12 @@ def generate_output(
     }
 
     raw = json.dumps(archive, separators=(",", ":"), ensure_ascii=False, sort_keys=True).encode()
-    with gzip.open(archive_path, "wb", compresslevel=9) as gz:
+    # mtime=0 and an empty filename keep the archive reproducible: an unchanged
+    # input must not produce a different file (see the profiles extractor).
+    with (
+        archive_path.open("wb") as raw_fh,
+        gzip.GzipFile(filename="", mode="wb", fileobj=raw_fh, compresslevel=9, mtime=0) as gz,
+    ):
         gz.write(raw)
 
     size_kb = archive_path.stat().st_size / 1024
@@ -1049,13 +1070,13 @@ def main() -> int:
     project_root = Path(__file__).resolve().parent.parent.parent
     _load_dotenv(project_root / ".env")
 
-    occu_path = os.environ.get("OCCU_PATH")
+    openccubase_path = os.environ.get("OPENCCUBASE_PATH")
     ccu_url = os.environ.get("CCU_URL")
     output_dir_str = os.environ.get("OUTPUT_DIR", _DEFAULT_OUTPUT_DIR)
 
-    if not occu_path and not ccu_url:
+    if not openccubase_path and not ccu_url:
         print(
-            "ERROR: Set OCCU_PATH (local checkout) or CCU_URL (remote CCU) environment variable.",
+            "ERROR: Set OPENCCUBASE_PATH (local checkout) or CCU_URL (remote CCU) environment variable.",
             file=sys.stderr,
         )
         return 1
@@ -1067,13 +1088,13 @@ def main() -> int:
     # Load sources
     sources: list[tuple[dict[str, dict[str, Any]], dict[str, Any]]] = []
 
-    if occu_path:
-        resolved_occu = Path(occu_path)
-        if not resolved_occu.is_absolute():
-            resolved_occu = project_root / resolved_occu
-        resolved_occu = resolved_occu.resolve()
-        print(f"Loading easymode data from {resolved_occu} ...")
-        sources.append(load_local(resolved_occu))
+    if openccubase_path:
+        resolved_base = Path(openccubase_path)
+        if not resolved_base.is_absolute():
+            resolved_base = project_root / resolved_base
+        resolved_base = resolved_base.resolve()
+        print(f"Loading easymode data from {resolved_base} ...")
+        sources.append(load_local(resolved_base))
 
     if ccu_url:
         print(f"\nLoading easymode data from {ccu_url} ...")

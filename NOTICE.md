@@ -17,13 +17,13 @@ This covers everything under:
 - top-level configuration files (`pyproject.toml`, `.pre-commit-config.yaml`,
   …)
 
-## 2. Extracted data artifacts (EQ-3 / OCCU License)
+## 2. Extracted data artifacts (eQ-3 Homematic Software License)
 
 The committed data artifacts under `openccu_data/data/` are derivative works
-generated from the
-[HomeMatic Open Central Control Unit SDK (HM-OCCU-SDK)](https://github.com/eq-3/occu)
-maintained by eQ-3 AG, and from compatible distributions such as
-[OpenCCU](https://github.com/jens-maus/RaspberryMatic).
+generated from
+[OpenCCU-Base](https://github.com/homematicip/OpenCCU-Base) maintained by
+eQ-3 AG, and from compatible distributions such as
+[OpenCCU](https://github.com/OpenCCU/OpenCCU).
 
 Specifically these files:
 
@@ -33,10 +33,13 @@ Specifically these files:
 - `openccu_data/data/profiles/*.json`
 
 are obtained by parsing TCL configuration and JavaScript translation files
-shipped with OCCU/RaspberryMatic. They retain the licensing of the original
-upstream sources. Refer to OCCU's `LicenseDE.txt` for the full terms — in
-short: free for private and non-commercial use; commercial redistribution
-requires permission from eQ-3.
+under `www/` of OpenCCU-Base. They retain the licensing of the original
+upstream sources. Per OpenCCU-Base's `licenses/licenses.md`, files are
+published under the "Homematic Software License" version 2.0 (HMSL 2.0)
+unless stated otherwise; `www/` is not listed among the exceptions there.
+Refer to OpenCCU-Base's `licenses/HMSL2.txt` for the full terms — in short:
+free for private and non-commercial use; commercial redistribution requires
+permission from eQ-3.
 
 The `translation_custom/` files are the exception inside the data tree: they
 contain hand-curated translation overrides authored by the openccu-data

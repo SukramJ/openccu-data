@@ -41,13 +41,13 @@ prek:  ## Run all prek (pre-commit) hooks on the whole tree
 
 check: lint typecheck test  ## lint + typecheck + test
 
-extract-easymodes:  ## Regenerate easymode_extract.json.gz (reads OCCU_PATH/CCU_URL)
+extract-easymodes:  ## Regenerate easymode_extract.json.gz (reads OPENCCUBASE_PATH/CCU_URL)
 	$(RUN) python script/extract_easymodes.py
 
-extract-translations:  ## Regenerate translation_extract.json.gz (reads OCCU_PATH/CCU_URL)
+extract-translations:  ## Regenerate translation_extract.json.gz (reads OPENCCUBASE_PATH/CCU_URL)
 	$(RUN) python script/extract_translations.py
 
-extract-profiles:  ## Regenerate profiles/*.json.gz (reads CCU_URL/OCCU_PATH)
+extract-profiles:  ## Regenerate profiles/*.json.gz (reads CCU_URL/OPENCCUBASE_PATH)
 	$(RUN) python script/extract_profiles.py
 
 extract: extract-easymodes extract-translations extract-profiles  ## Run all three extractors

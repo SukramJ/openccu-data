@@ -1,30 +1,31 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
 """
-Parse OCCU easymode TCL files and generate JSON profile definitions.
+Parse OpenCCU-Base easymode TCL files and generate JSON profile definitions.
 
-Parse TCL easymode profile files from a local OCCU checkout or a running
-OpenCCU/RaspberryMatic instance and output structured JSON profile files
-for use by the ProfileStore.
+Parse TCL easymode profile files from a local OpenCCU-Base checkout or a
+running OpenCCU instance and output structured JSON profile files for use by
+the ProfileStore.
 
 Usage:
     # From a running OpenCCU instance (preferred)
     CCU_URL=https://my-ccu.local openccu-extract-profiles
 
-    # From local OCCU checkout
-    OCCU_PATH=/path/to/occu openccu-extract-profiles
+    # From local OpenCCU-Base checkout
+    OPENCCUBASE_PATH=/path/to/OpenCCU-Base openccu-extract-profiles
 
     # Both set: running instance is preferred, local as fallback
-    OCCU_PATH=/path/to/occu CCU_URL=https://my-ccu.local openccu-extract-profiles
+    OPENCCUBASE_PATH=/path/to/OpenCCU-Base CCU_URL=https://my-ccu.local openccu-extract-profiles
 
     # Only specific receiver types
-    OCCU_PATH=/path/to/occu RECEIVERS=DIMMER_VIRTUAL_RECEIVER,SWITCH_VIRTUAL_RECEIVER openccu-extract-profiles
+    OPENCCUBASE_PATH=/path/to/OpenCCU-Base RECEIVERS=DIMMER_VIRTUAL_RECEIVER \
+        openccu-extract-profiles
 
 Environment Variables:
-    OCCU_PATH   Path to local OCCU checkout
-    CCU_URL     URL of a running OpenCCU/RaspberryMatic instance (preferred)
-    RECEIVERS   Comma-separated list of receiver channel types to parse (optional, default: all)
-    OUTPUT_DIR  Output directory (default: openccu_data/data/profiles)
+    OPENCCUBASE_PATH  Path to local OpenCCU-Base checkout
+    CCU_URL           URL of a running OpenCCU instance (preferred)
+    RECEIVERS         Comma-separated list of receiver channel types to parse (optional, default: all)
+    OUTPUT_DIR        Output directory (default: openccu_data/data/profiles)
 
 Per-receiver profile files are written gzipped (``<RECEIVER>.json.gz``) since
 they grow up to several megabytes. ``_receiver_type_aliases.json`` stays
@@ -307,13 +308,13 @@ _HTML_TAG_RE = re.compile(r"<[^>]+>")
 def _strip_html(text: str) -> str:
     """Strip HTML tags and decode character references.
 
-    The OCCU localisation files are WebUI fragments: a profile named
+    The OpenCCU-Base localisation files are WebUI fragments: a profile named
     "Bewässerungsaktor" is stored as "Bew&auml;sserungsaktor". Consumers
     render these as plain text, so a surviving reference is shown to the
     operator verbatim.
 
     html.unescape covers every named and numeric reference, including the
-    ones a hand-maintained table would miss on the next OCCU release. It
+    ones a hand-maintained table would miss on the next OpenCCU-Base release. It
     also matches what the translation extractor already does, so the three
     artefacts agree on what a display string looks like.
     """
@@ -412,9 +413,25 @@ def _parse_tcl_profiles(
 # ---------------------------------------------------------------------------
 
 
-def _discover_receiver_types_local(occu_path: Path) -> list[str]:
-    """Discover all receiver type directories from a local OCCU checkout."""
-    base = occu_path / "WebUI" / "www" / _EASYMODE_BASE
+def _resolve_www_root(base_path: Path) -> Path:
+    """
+    Return the WebUI document root inside a source checkout.
+
+    Two layouts are in use: OpenCCU-Base keeps the document root at ``www/``,
+    while an OCCU tree — including the patched one the OpenCCU firmware build
+    produces — keeps it at ``WebUI/www/``. Pick whichever actually carries the
+    ``config/`` directory the extractors read; fall back to ``www/`` so the
+    caller reports a missing path against the modern layout.
+    """
+    for candidate in (base_path / "www", base_path / "WebUI" / "www"):
+        if (candidate / "config").is_dir():
+            return candidate
+    return base_path / "www"
+
+
+def _discover_receiver_types_local(openccubase_path: Path) -> list[str]:
+    """Discover all receiver type directories from a local OpenCCU-Base checkout."""
+    base = _resolve_www_root(openccubase_path) / _EASYMODE_BASE
     if not base.exists():
         print(f"  WARNING: Easymodes directory not found: {base}", file=sys.stderr)
         return []
@@ -432,32 +449,32 @@ def _discover_receiver_types_local(occu_path: Path) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# Local OCCU source loading
+# Local OpenCCU-Base source loading
 # ---------------------------------------------------------------------------
 
 
 def _load_localization_local(
     *,
-    occu_base: Path,
+    easymode_base: Path,
     receiver_type: str,
     sender_type: str,
     locale: str,
 ) -> dict[str, str]:
-    """Load and merge localization strings from local OCCU files."""
+    """Load and merge localization strings from local OpenCCU-Base files."""
     strings: dict[str, str] = {}
 
     # 1. Generic strings
-    generic_file = occu_base / "etc" / "localization" / locale / "GENERIC.txt"
+    generic_file = easymode_base / "etc" / "localization" / locale / "GENERIC.txt"
     if generic_file.exists():
         strings.update(_parse_loc_content(generic_file.read_text(encoding="utf-8", errors="replace")))
 
     # 2. Receiver-specific generic strings
-    receiver_generic = occu_base / receiver_type / "localization" / locale / "GENERIC.txt"
+    receiver_generic = easymode_base / receiver_type / "localization" / locale / "GENERIC.txt"
     if receiver_generic.exists():
         strings.update(_parse_loc_content(receiver_generic.read_text(encoding="utf-8", errors="replace")))
 
     # 3. Sender-specific strings
-    sender_file = occu_base / receiver_type / "localization" / locale / f"{sender_type}.txt"
+    sender_file = easymode_base / receiver_type / "localization" / locale / f"{sender_type}.txt"
     if sender_file.exists():
         strings.update(_parse_loc_content(sender_file.read_text(encoding="utf-8", errors="replace")))
 
@@ -466,7 +483,7 @@ def _load_localization_local(
 
 def _resolve_sourced_content_local(
     tcl_content: str,
-    occu_base: Path,
+    easymode_base: Path,
 ) -> str:
     """Prepend content from `source`d profile TCL files to the sender content."""
     sourced_parts: list[str] = []
@@ -476,7 +493,7 @@ def _resolve_sourced_content_local(
         # Only follow profile includes, not helper files
         if not sourced_name.startswith("profile"):
             continue
-        sourced_path = occu_base / sourced_receiver / f"{sourced_name}.tcl"
+        sourced_path = easymode_base / sourced_receiver / f"{sourced_name}.tcl"
         if sourced_path.exists():
             sourced_parts.append(sourced_path.read_text(encoding="utf-8", errors="replace"))
     if sourced_parts:
@@ -486,12 +503,12 @@ def _resolve_sourced_content_local(
 
 def _parse_receiver_local(
     *,
-    occu_path: Path,
+    openccubase_path: Path,
     receiver_type: str,
 ) -> dict[str, Any]:
-    """Parse all sender profiles for a receiver type from local OCCU."""
+    """Parse all sender profiles for a receiver type from local OpenCCU-Base."""
     result: dict[str, Any] = {}
-    base = occu_path / "WebUI" / "www" / _EASYMODE_BASE
+    base = _resolve_www_root(openccubase_path) / _EASYMODE_BASE
     receiver_dir = base / receiver_type
 
     if not receiver_dir.exists():
@@ -508,13 +525,13 @@ def _parse_receiver_local(
         tcl_content = _resolve_sourced_content_local(tcl_content, base)
 
         loc_en = _load_localization_local(
-            occu_base=base,
+            easymode_base=base,
             receiver_type=receiver_type,
             sender_type=sender_type,
             locale="en",
         )
         loc_de = _load_localization_local(
-            occu_base=base,
+            easymode_base=base,
             receiver_type=receiver_type,
             sender_type=sender_type,
             locale="de",
@@ -726,10 +743,10 @@ def _extract_alias_from_link_tcl(tcl_content: str, original_type: str) -> str | 
     return None
 
 
-def _extract_aliases_local(occu_path: Path) -> dict[str, str]:
-    """Extract receiver type aliases from local OCCU linkHmIP_*.tcl files."""
+def _extract_aliases_local(openccubase_path: Path) -> dict[str, str]:
+    """Extract receiver type aliases from local OpenCCU-Base linkHmIP_*.tcl files."""
     aliases: dict[str, str] = {}
-    base = occu_path / "WebUI" / "www" / _EASYMODE_BASE
+    base = _resolve_www_root(openccubase_path) / _EASYMODE_BASE
 
     for tcl_file in sorted(base.glob("linkHmIP_*.tcl")):
         m = _LINK_FILE_RE.search(tcl_file.name)
@@ -785,21 +802,29 @@ def _load_dotenv(env_file: Path) -> None:
 
 
 def main() -> int:
-    """Parse easymode profiles from OCCU source."""
+    """Parse easymode profiles from OpenCCU-Base source."""
     project_root = Path(__file__).resolve().parent.parent.parent
     _load_dotenv(project_root / ".env")
 
-    occu_path = os.environ.get("OCCU_PATH")
+    openccubase_path_str = os.environ.get("OPENCCUBASE_PATH")
     ccu_url = os.environ.get("CCU_URL")
     receivers_str = os.environ.get("RECEIVERS")
     output_dir_str = os.environ.get("OUTPUT_DIR", _DEFAULT_OUTPUT_DIR)
 
-    if not occu_path and not ccu_url:
+    if not openccubase_path_str and not ccu_url:
         print(
-            "ERROR: Set OCCU_PATH (local checkout) or CCU_URL (running OpenCCU) environment variable.",
+            "ERROR: Set OPENCCUBASE_PATH (local checkout) or CCU_URL (running OpenCCU) environment variable.",
             file=sys.stderr,
         )
         return 1
+
+    # Resolve the checkout path (relative paths resolve against the repo root)
+    openccubase_path: Path | None = None
+    if openccubase_path_str:
+        openccubase_path = Path(openccubase_path_str)
+        if not openccubase_path.is_absolute():
+            openccubase_path = project_root / openccubase_path
+        openccubase_path = openccubase_path.resolve()
 
     # Resolve output directory (absolute paths used as-is, relative to repo root)
     output_dir = Path(output_dir_str)
@@ -810,18 +835,18 @@ def main() -> int:
     # Determine source: prefer running CCU instance over local checkout
     if ccu_url:
         print(f"Using running OpenCCU instance: {ccu_url}")
-        if occu_path:
-            print(f"  (local OCCU at {occu_path} available as fallback)")
+        if openccubase_path:
+            print(f"  (local OpenCCU-Base at {openccubase_path} available as fallback)")
     else:
-        print(f"Using local OCCU checkout: {occu_path}")
+        print(f"Using local OpenCCU-Base checkout: {openccubase_path}")
 
     # Determine receiver types to parse
     if receivers_str:
         receivers = [r.strip() for r in receivers_str.split(",") if r.strip()]
         print(f"\nParsing {len(receivers)} specified receiver type(s)...")
-    elif occu_path:
-        receivers = _discover_receiver_types_local(Path(occu_path))
-        print(f"\nAuto-discovered {len(receivers)} receiver type(s) from local OCCU.")
+    elif openccubase_path:
+        receivers = _discover_receiver_types_local(openccubase_path)
+        print(f"\nAuto-discovered {len(receivers)} receiver type(s) from local OpenCCU-Base.")
     else:
         receivers = list(_KNOWN_RECEIVER_TYPES)
         print(f"\nUsing {len(receivers)} known receiver type(s) for remote discovery.")
@@ -839,11 +864,11 @@ def main() -> int:
         if ccu_url:
             data = _parse_receiver_remote(ccu_url=ccu_url, receiver_type=receiver_type)
             # Fall back to local if remote yields nothing and local is available
-            if not data and occu_path:
-                print("  Remote yielded no results, falling back to local OCCU...")
-                data = _parse_receiver_local(occu_path=Path(occu_path), receiver_type=receiver_type)
-        elif occu_path:
-            data = _parse_receiver_local(occu_path=Path(occu_path), receiver_type=receiver_type)
+            if not data and openccubase_path:
+                print("  Remote yielded no results, falling back to local OpenCCU-Base...")
+                data = _parse_receiver_local(openccubase_path=openccubase_path, receiver_type=receiver_type)
+        elif openccubase_path:
+            data = _parse_receiver_local(openccubase_path=openccubase_path, receiver_type=receiver_type)
 
         if data:
             out_file = output_dir / f"{receiver_type}.json.gz"
@@ -862,10 +887,10 @@ def main() -> int:
     print("\nExtracting receiver type aliases...")
     if ccu_url:
         aliases = _extract_aliases_remote(ccu_url=ccu_url)
-        if not aliases and occu_path:
-            aliases = _extract_aliases_local(occu_path=Path(occu_path))
-    elif occu_path:
-        aliases = _extract_aliases_local(occu_path=Path(occu_path))
+        if not aliases and openccubase_path:
+            aliases = _extract_aliases_local(openccubase_path=openccubase_path)
+    elif openccubase_path:
+        aliases = _extract_aliases_local(openccubase_path=openccubase_path)
     else:
         aliases = {}
 

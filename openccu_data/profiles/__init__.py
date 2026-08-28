@@ -1,6 +1,6 @@
 """Easymode link-profile extractor.
 
-Parses TCL easymode profile files from OCCU/OpenCCU/RaspberryMatic and emits
+Parses TCL easymode profile files from OpenCCU-Base/OpenCCU and emits
 one JSON file per receiver channel type into ``data/profiles/``.
 """
 
