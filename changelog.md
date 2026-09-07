@@ -1,3 +1,40 @@
+# Version 2026.9.0 (2026-09-07)
+
+## What's Changed
+
+### Added
+
+- **Channel-typed labels for `CHANNEL_OPERATION_MODE` on the HmIP door-lock
+  drive.** The parameter appears on three channel types of an HmIP-DLP with a
+  different VALUE_LIST on each, and no source carries a label for any of the
+  tokens: not the extract, not the CCU's own `stringtable_de.txt`, not the
+  WebUI language files, not the OpenCCU-Base sources. Consumers fell back to
+  whatever the unqualified `channel_operation_mode=<index>` entries happened
+  to say, which came from an unrelated device. The curated overlay now names
+  all three enums, keyed by channel type so no other type can borrow them:
+
+  - `door_lock_transceiver`: `IGNORE_DOOR_OPEN`, `SKIP_HOLD_TIME_OPENING`,
+    `SKIP_RELOCK_DELAY_CLOSING`,
+    `SKIP_HOLD_TIME_OPENING_RELOCK_DELAY_CLOSING`
+  - `acceleration_transceiver`: `OFF`, `TILT_DETECTION`, `ANY_MOTION`,
+    `TILT_AND_MOTION_DETECTION`
+  - `door_state_transceiver`: `OFF`, `ON`, `ON_AUTO_CALIBRATION`
+
+  The wording is derived from the CCU's own terms for the neighbouring
+  settings (`stringTableDoorLockHoldTime` "Haltezeit beim Öffnen",
+  `stringTableAutoRelockDelay` "Wartezeit vor Auto Relock"), because the CCU
+  has none for the enum values themselves. The VALUE_LISTs were captured
+  read-only from a live HmIP-DLP on CCU firmware via
+  `Interface.getParamsetDescription`.
+
+### Fixed
+
+- **`channel_types_de[door_lock_transceiver]` said "Tüschlossantrieb".** The
+  typo is upstream — `translate.lang.channelDescription.js` carries
+  `chType_DOOR_LOCK_TRANSCEIVER = Tüschlossantrieb` while every neighbouring
+  string in the same file, `chType_DOOR_LOCK_STATE_TRANSMITTER` included,
+  spells "Türschlossantrieb". The curated overlay corrects it.
+
 # Version 2026.8.1 (2026-08-28)
 
 ## What's Changed

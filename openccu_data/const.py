@@ -4,4 +4,4 @@ from __future__ import annotations
 
 from typing import Final
 
-VERSION: Final = "2026.8.1"
+VERSION: Final = "2026.9.0"
