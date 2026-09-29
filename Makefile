@@ -10,7 +10,7 @@ RUN := script/run-in-env.sh
 .DEFAULT_GOAL := help
 
 .PHONY: help setup install test coverage lint format typecheck prek check \
-	extract-easymodes extract-translations extract-profiles extract clean
+	extract-easymodes extract-translations extract-profiles extract-device-images extract clean
 
 help:  ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make <target>\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ {printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -50,7 +50,10 @@ extract-translations:  ## Regenerate translation_extract.json.gz (reads OPENCCUB
 extract-profiles:  ## Regenerate profiles/*.json.gz (reads CCU_URL/OPENCCUBASE_PATH)
 	$(RUN) python script/extract_profiles.py
 
-extract: extract-easymodes extract-translations extract-profiles  ## Run all three extractors
+extract-device-images:  ## Copy device images to device_images/250/ and check them against device_icons (reads OPENCCUBASE_PATH)
+	$(RUN) python script/extract_device_images.py
+
+extract: extract-easymodes extract-translations extract-profiles extract-device-images  ## Run all extractors
 
 clean:  ## Remove build artifacts and tool caches
 	rm -rf build/ dist/ *.egg-info .pytest_cache .mypy_cache .ruff_cache .coverage

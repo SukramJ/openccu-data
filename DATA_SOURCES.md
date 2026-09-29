@@ -90,6 +90,13 @@ the correct source, and the running CCU is no longer needed for extraction.
 replace data describing the running firmware with data describing an
 unpatched base — see the known deviations below.
 
+The device images (`device_images/250/`) are the one artifact class that is
+extracted from OpenCCU-Base on purpose: the device-image extractor reads a
+local checkout only, and `device_icons` — the table naming which image each
+model uses — is identical with and without the CCU overlay (535 / 535 above).
+Whether the OpenCCU patch stack replaces any image file itself has not been
+checked (unverified); a patched image would not be picked up.
+
 ### Known deviations (2026-08-28)
 
 Two concrete values where OpenCCU-Base and the running firmware disagree.

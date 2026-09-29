@@ -1,3 +1,19 @@
+# Version 2026.9.1 (2026-09-29)
+
+## What's Changed
+
+### Added
+
+- **Device images.** `openccu_data/data/device_images/250/` now carries the
+  CCU WebUI device images — the 250 px variant, including the `coupling/`
+  subdirectory — as byte-identical copies of
+  `www/config/img/devices/250/` from OpenCCU-Base (297 PNGs, ~7.5 MB). The
+  new `openccu-extract-device-images` extractor (`make extract-device-images`)
+  copies them and then checks that every filename referenced by the
+  `device_icons` table exists; a missing one is listed and fails the run.
+  Consumers without a WebUI can render device images from this tree. The
+  images are not part of the Python package data.
+
 # Version 2026.9.0 (2026-09-07)
 
 ## What's Changed

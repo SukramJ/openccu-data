@@ -31,9 +31,11 @@ Specifically these files:
 - `openccu_data/data/translation_extract.json.gz`
 - `openccu_data/data/translation_custom/*.json` _(curated additions, MIT)_
 - `openccu_data/data/profiles/*.json`
+- `openccu_data/data/device_images/250/**/*.png`
 
 are obtained by parsing TCL configuration and JavaScript translation files
-under `www/` of OpenCCU-Base. They retain the licensing of the original
+under `www/` of OpenCCU-Base; the device images are unmodified byte-for-byte
+copies of `www/config/img/devices/250/` of OpenCCU-Base. They retain the licensing of the original
 upstream sources. Per OpenCCU-Base's `licenses/licenses.md`, files are
 published under the "Homematic Software License" version 2.0 (HMSL 2.0)
 unless stated otherwise; `www/` is not listed among the exceptions there.

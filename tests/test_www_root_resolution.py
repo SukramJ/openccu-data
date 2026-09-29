@@ -16,11 +16,13 @@ from pathlib import Path
 
 import pytest
 
+from openccu_data.device_images import extractor as _DEVICE_IMAGES
 from openccu_data.easymodes import extractor as _EASYMODES
 from openccu_data.profiles import extractor as _PROFILES
 from openccu_data.translations import extractor as _TRANSLATIONS
 
 _RESOLVERS = (
+    pytest.param(_DEVICE_IMAGES._resolve_www_root, id="device_images"),
     pytest.param(_EASYMODES._resolve_www_root, id="easymodes"),
     pytest.param(_PROFILES._resolve_www_root, id="profiles"),
     pytest.param(_TRANSLATIONS._resolve_www_root, id="translations"),

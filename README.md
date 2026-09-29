@@ -1,7 +1,7 @@
 # openccu-data
 
 Extract and distribute Homematic CCU configuration metadata
-(translations, easymodes, link profiles) from
+(translations, easymodes, link profiles, device images) from
 [OpenCCU-Base](https://github.com/homematicip/OpenCCU-Base) /
 [OpenCCU](https://github.com/OpenCCU/OpenCCU).
 
@@ -12,13 +12,14 @@ projects vendor the produced JSON archives at runtime.
 
 ## What this provides
 
-| Extractor                      | Source                               | Output                                                                                 |
-| ------------------------------ | ------------------------------------ | -------------------------------------------------------------------------------------- |
-| `openccu-extract-easymodes`    | TCL config under `config/easymodes/` | `openccu_data/data/easymode_extract.json.gz`                                           |
-| `openccu-extract-translations` | JS translation files + stringtable   | `openccu_data/data/translation_extract.json.gz` + `translation_custom/`                |
-| `openccu-extract-profiles`     | TCL link-profile files per receiver  | `openccu_data/data/profiles/<RECEIVER_TYPE>.json.gz` (+ `_receiver_type_aliases.json`) |
+| Extractor                       | Source                               | Output                                                                                 |
+| ------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------- |
+| `openccu-extract-easymodes`     | TCL config under `config/easymodes/` | `openccu_data/data/easymode_extract.json.gz`                                           |
+| `openccu-extract-translations`  | JS translation files + stringtable   | `openccu_data/data/translation_extract.json.gz` + `translation_custom/`                |
+| `openccu-extract-profiles`      | TCL link-profile files per receiver  | `openccu_data/data/profiles/<RECEIVER_TYPE>.json.gz` (+ `_receiver_type_aliases.json`) |
+| `openccu-extract-device-images` | PNGs under `config/img/devices/250/` | `openccu_data/data/device_images/250/` (byte-identical, incl. `coupling/`)             |
 
-All three read from either:
+The first three read from either:
 
 - a local OpenCCU-Base checkout (`OPENCCUBASE_PATH=/path/to/OpenCCU-Base`), or
 - a running CCU instance over HTTP/HTTPS (`CCU_URL=https://my-ccu.local`).
@@ -29,6 +30,11 @@ still required, and what has to change before it is not.
 
 If both are set, the easymode/translation extractors merge results; the
 profile extractor prefers the running CCU and falls back to local.
+
+The device-image extractor reads a local checkout only (`OPENCCUBASE_PATH`).
+It runs after the translation extractor: every filename in the `device_icons`
+table of `translation_extract.json.gz` must exist in the copied tree, and a
+missing one fails the run.
 
 ## Repository layout
 
@@ -48,11 +54,13 @@ openccu-data/
 │   ├── easymodes/extractor.py        easymode metadata parser
 │   ├── translations/extractor.py     CCU WebUI translation parser
 │   ├── profiles/extractor.py         easymode link-profile parser
+│   ├── device_images/extractor.py    device image copier + device_icons check
 │   └── data/                         committed, vendored output
 │       ├── easymode_extract.json.gz
 │       ├── translation_extract.json.gz
 │       ├── translation_custom/*.json
-│       └── profiles/*.json.gz (+ _receiver_type_aliases.json)
+│       ├── profiles/*.json.gz (+ _receiver_type_aliases.json)
+│       └── device_images/250/*.png (+ coupling/*.png)
 ├── script/                           CLI wrappers
 └── tests/
 ```
@@ -69,12 +77,13 @@ No third-party runtime dependencies; only the standard library.
 
 ### Console scripts
 
-After installation, three console scripts are available on the PATH:
+After installation, four console scripts are available on the PATH:
 
 ```bash
 OPENCCUBASE_PATH=/path/to/OpenCCU-Base openccu-extract-easymodes
 OPENCCUBASE_PATH=/path/to/OpenCCU-Base openccu-extract-translations
 CCU_URL=https://my-ccu.local openccu-extract-profiles
+OPENCCUBASE_PATH=/path/to/OpenCCU-Base openccu-extract-device-images
 ```
 
 Output lands in `openccu_data/data/` by default. Override via `OUTPUT_DIR`.
@@ -85,6 +94,7 @@ Output lands in `openccu_data/data/` by default. Override via `OUTPUT_DIR`.
 OPENCCUBASE_PATH=/path/to/OpenCCU-Base python script/extract_easymodes.py
 OPENCCUBASE_PATH=/path/to/OpenCCU-Base python script/extract_translations.py
 CCU_URL=https://my-ccu.local python script/extract_profiles.py
+OPENCCUBASE_PATH=/path/to/OpenCCU-Base python script/extract_device_images.py
 ```
 
 ### Environment variables

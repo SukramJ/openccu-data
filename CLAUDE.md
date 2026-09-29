@@ -32,18 +32,20 @@ openccu_data/
 │   ├── easymode_extract.json.gz
 │   ├── translation_extract.json.gz
 │   ├── translation_custom/        curated translation overrides (MIT)
-│   └── profiles/                  one .json.gz per receiver channel type
-│       └── _receiver_type_aliases.json   (uncompressed; tiny, eager-loaded)
+│   ├── profiles/                  one .json.gz per receiver channel type
+│   │   └── _receiver_type_aliases.json   (uncompressed; tiny, eager-loaded)
+│   └── device_images/250/         byte-identical WebUI device PNGs (+ coupling/)
 ├── easymodes/extractor.py         TCL easymode parser → easymode_extract.json.gz
 ├── translations/extractor.py      JS + stringtable parser → translation_extract.json.gz
-└── profiles/extractor.py          TCL profile parser → profiles/*.json
+├── profiles/extractor.py          TCL profile parser → profiles/*.json
+└── device_images/extractor.py     PNG copier → device_images/250/, checked against device_icons
 
 script/                            CLI wrappers (sys.path shim → main())
 tests/                             pytest suite
 Makefile                           wrappers for the common commands (make help)
 ```
 
-The three extractors are independent. They share no helper module; each is
+The four extractors are independent. They share no helper module; each is
 self-contained and only depends on the standard library.
 
 ## Development environment
@@ -72,12 +74,13 @@ is not required.
 
 ### Console scripts
 
-After `pip install -e .` three commands are on PATH:
+After `pip install -e .` four commands are on PATH:
 
 ```
 openccu-extract-easymodes
 openccu-extract-translations
 openccu-extract-profiles
+openccu-extract-device-images
 ```
 
 All read `OPENCCUBASE_PATH` (local checkout), `CCU_URL` (running instance), and
@@ -97,7 +100,7 @@ loaded by each `main()` (existing env vars win).
   the patched one the OpenCCU firmware build produces — at `WebUI/www/`. The
   layout is picked by which candidate actually carries `config/`. Relative
   paths resolve against the repository root
-  (`Path(__file__).parent.parent.parent`) in all three extractors.
+  (`Path(__file__).parent.parent.parent`) in all extractors.
 - **Merging**: `easymodes` and `translations` extractors merge results when
   both `OPENCCUBASE_PATH` and `CCU_URL` are set. `profiles` prefers `CCU_URL`
   and uses `OPENCCUBASE_PATH` as a fallback for empty results.

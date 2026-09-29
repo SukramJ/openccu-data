@@ -41,6 +41,7 @@ test = [
 openccu-extract-easymodes    = "openccu_data.easymodes.extractor:main"
 openccu-extract-translations = "openccu_data.translations.extractor:main"
 openccu-extract-profiles     = "openccu_data.profiles.extractor:main"
+openccu-extract-device-images = "openccu_data.device_images.extractor:main"
 
 [project.urls]
 "Homepage"    = "https://github.com/sukramj/openccu-data"
