@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.14"]
+        python-version: ["3.14", "3.15"]
     name: Python ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v7
@@ -34,6 +34,7 @@ jobs:
         run: |
           pytest tests/ --cov=openccu_data --cov-report=xml --cov-report=term-missing
       - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.14'
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5  # v7.1.1
         with:
           files: ./coverage.xml
