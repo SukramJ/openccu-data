@@ -208,3 +208,6 @@ __marimo__/
 
 # Node.js (e.g. prettier cache created by pre-commit)
 node_modules/
+
+# Claude Code local settings
+.claude/settings.local.json
